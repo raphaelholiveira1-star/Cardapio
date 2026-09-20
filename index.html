@@ -4,24 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lanchonete Praça 12 | Cardápio digital</title>
-<meta name="description" content="Cardápio digital com pedido direto pelo WhatsApp. Projeto de demonstração.">
+<meta name="description" content="Cardápio digital com pedido e pagamento online. Projeto de demonstração.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="top"><div class="wrap">
 <span class="badge">Aberto hoje até 23h</span>
 <h1>Lanchonete Praça 12</h1>
-<p>Monte seu pedido e envie direto pelo WhatsApp. Sem cadastro e sem baixar app.</p>
+<p>Monte seu pedido e pague aqui mesmo, pelo site. Sem cadastro e sem baixar app.</p>
 </div></header>
 <nav aria-label="Categorias"><div class="wrap" id="cats"></div></nav>
 <main class="wrap" id="menu"></main>
-<footer><p class="note">Projeto de demonstração: cardápio fictício criado para mostrar como funciona um pedido por WhatsApp.</p></footer>
+<footer><p class="note">Projeto de demonstração: cardápio fictício criado para mostrar como funciona um pedido com pagamento online.</p></footer>
 
 <div class="bar" id="bar"><button id="open"><span id="bc"></span><span id="bt"></span></button></div>
 <div class="ov" id="ov"></div>
 <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Seu pedido"><div class="in">
 <div class="hd"><h2>Seu pedido</h2><button class="x" id="x" aria-label="Fechar">✕</button></div>
-<div id="lines"></div>
+<div id="ckview"><div id="lines"></div>
 <form id="f">
 <div class="f"><label class="l" for="nm">Seu nome</label><input type="text" id="nm" required autocomplete="name"></div>
 <div class="f"><span class="l">Como quer receber?</span><div class="seg">
@@ -31,18 +31,18 @@
 <div class="f"><span class="l">Pagamento</span><div class="seg">
 <label><input type="radio" name="pg" value="Pix" checked><span>Pix</span></label>
 <label><input type="radio" name="pg" value="Cartão"><span>Cartão</span></label>
-<label><input type="radio" name="pg" value="Dinheiro"><span>Dinheiro</span></label></div></div>
-<div class="f" id="troco" hidden><label class="l" for="tc">Troco para quanto? (opcional)</label><input type="text" id="tc" placeholder="R$ 50"></div>
+<label><input type="radio" name="pg" value="Entrega"><span>Na entrega</span></label></div></div>
+<div id="pm"></div>
 <div class="f"><label class="l" for="ob">Observações (opcional)</label><textarea id="ob" rows="2" placeholder="Ex.: sem cebola"></textarea></div>
 <div id="sum"></div>
-<button class="send" type="submit">Enviar pedido pelo WhatsApp</button>
-<p class="note">O pedido chega pelo WhatsApp da lanchonete, e o pagamento é combinado na entrega ou na retirada.</p>
-</form>
+<button class="send" id="pay" type="submit">Continuar</button>
+<p class="note">Pagamento de demonstração: nenhum valor é cobrado e os dados digitados não são enviados nem guardados.</p>
+</form></div>
+<div id="pixview" hidden></div>
+<div id="trackview" hidden></div>
 </div></section>
 
 <script>
-// Número do WhatsApp que recebe os pedidos (55 + DDD + número). Troque pelo do estabelecimento.
-const WHATSAPP='5511987184298';
 const FEE=6;
 const M=[
 ['Lanches',[
@@ -63,7 +63,7 @@ const M=[
 ];
 const $=s=>document.querySelector(s),brl=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const all=M.flatMap(c=>c[1]),get=id=>all.find(i=>i[0]==id);
-let cart={};
+let cart={},pend=null,order=null,timer=null;
 
 $('#cats').innerHTML=M.map((c,i)=>`<a href="#c${i}">${c[0]}</a>`).join('');
 $('#menu').innerHTML=M.map((c,i)=>`<h2 id="c${i}">${c[0]}</h2>`+c[1].map(p=>
@@ -84,43 +84,91 @@ const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
 
 function upd(){
   const n=cnt(),s=sub(),ent=val('tipo')==='Entrega',fee=ent?FEE:0;
-  $('#bar').classList.toggle('on',n>0);
-  $('#bc').textContent='Ver pedido · '+n+(n===1?' item':' itens');
-  $('#bt').textContent=brl(s);
+  $('#bar').classList.toggle('on',n>0||!!order);
+  $('#bc').textContent=n?'Ver pedido · '+n+(n===1?' item':' itens'):order?'Acompanhar pedido #P12-'+order.n:'';
+  $('#bt').textContent=n?brl(s):order?['Recebido','Em preparo',order.ent?'A caminho':'Pronto','Concluído'][order.step]:'';
   $('#end').hidden=!ent;$('#ad').required=ent;
-  $('#troco').hidden=val('pg')!=='Dinheiro';
   $('#lines').innerHTML=Object.keys(cart).map(i=>{const p=get(i);
     return `<div class="ln"><span>${p[2]}</span><span class="ctl"><button class="st" data-dec="${i}" aria-label="Tirar um">−</button><span class="q">${cart[i]}</span><button class="st" data-inc="${i}" aria-label="Colocar mais um">+</button></span><span>${brl(p[4]*cart[i])}</span></div>`}).join('');
   $('#sum').innerHTML=`<div class="row"><span>Subtotal</span><span>${brl(s)}</span></div>${ent?`<div class="row"><span>Taxa de entrega</span><span>${brl(fee)}</span></div>`:''}<div class="row tot"><span>Total</span><span>${brl(s+fee)}</span></div>`;
   return s+fee;
 }
 function sheet(on){$('#sheet').classList.toggle('on',on);$('#ov').classList.toggle('on',on);}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function show(id){['ckview','pixview','trackview'].forEach(v=>{$('#'+v).hidden=v!==id});$('#sheet').scrollTop=0;}
+function qr(){
+  const z=25;let r='';
+  for(let y=0;y<z;y++)for(let x=0;x<z;x++){
+    if((x<8&&y<8)||(x>z-9&&y<8)||(x<8&&y>z-9))continue;
+    if(Math.random()<.5)r+=`<rect x="${x}" y="${y}" width="1" height="1"/>`;
+  }
+  [[0,0],[z-7,0],[0,z-7]].forEach(([a,b])=>{r+=`<path fill-rule="evenodd" d="M${a} ${b}h7v7h-7zM${a+1} ${b+1}v5h5v-5z"/><rect x="${a+2}" y="${b+2}" width="3" height="3"/>`;});
+  return `<svg viewBox="0 0 25 25" class="qr" role="img" aria-label="QR Code Pix de demonstração" fill="currentColor">${r}</svg>`;
+}
+function pm(){
+  const p=val('pg');
+  $('#pm').innerHTML=p==='Pix'?`<div class="box">Você paga com Pix logo depois de confirmar. O QR Code aparece na próxima tela.</div>`
+  :p==='Entrega'?`<div class="box">Pague ao receber, em dinheiro ou na maquininha.</div><div class="f"><label class="l" for="tc">Troco para quanto? (opcional)</label><input type="text" id="tc" placeholder="R$ 50"></div>`
+  :`<p class="note">Demonstração: não digite dados reais de cartão.</p>
+<div class="f"><label class="l" for="cn">Número do cartão</label><input type="text" id="cn" inputmode="numeric" autocomplete="off" required pattern="[0-9]{4} [0-9]{4} [0-9]{4} [0-9]{4}" placeholder="0000 0000 0000 0000"></div>
+<div class="f"><label class="l" for="cnm">Nome impresso no cartão</label><input type="text" id="cnm" autocomplete="off" required></div>
+<div class="grid2"><div class="f"><label class="l" for="vl">Validade</label><input type="text" id="vl" inputmode="numeric" autocomplete="off" required pattern="[0-9]{2}/[0-9]{2}" placeholder="MM/AA"></div><div class="f"><label class="l" for="cc">CVV</label><input type="text" id="cc" inputmode="numeric" autocomplete="off" required pattern="[0-9]{3,4}" placeholder="123"></div></div>`;
+  $('#pay').textContent=p==='Pix'?'Pagar com Pix':p==='Cartão'?'Pagar com cartão':'Confirmar pedido';
+}
+function showPix(){
+  $('#pixview').innerHTML=`<p>Pague <b>${brl(pend.total)}</b> com Pix. Escaneie o QR Code ou copie o código no app do seu banco.</p>${qr()}<textarea class="code" readonly rows="3" aria-label="Pix copia e cola">00020126-DEMO-P12-${pend.n}-5204000053039865802BR</textarea><button class="btn2" data-copy>Copiar código</button><p class="note">Aguardando pagamento (demonstração).</p><button class="send" id="paid">Já paguei (simular pagamento)</button><button class="link" id="backck">← Voltar</button>`;
+  show('pixview');
+}
+function track(){
+  const o=order,S=o.ent?['Pedido recebido','Em preparo','Saiu para entrega','Entregue']:['Pedido recebido','Em preparo','Pronto para retirar','Retirado'];
+  $('#trackview').innerHTML=`<p>Obrigado, <b>${esc(o.nome)}</b>! Pedido <b>#P12-${o.n}</b> confirmado.</p><ol class="steps">${S.map((t,i)=>`<li class="${i<o.step?'done':i===o.step?'now':''}">${t}</li>`).join('')}</ol><p class="note">${o.step>=3?'Bom apetite!':'Tempo estimado: '+(o.ent?'35 a 45':'20 a 25')+' minutos (na demonstração, o andamento é acelerado).'}</p><div class="box">${o.items.map(esc).join('<br>')}<br><b>Total ${brl(o.total)}</b> · ${esc(o.pag)}${o.ent?'<br>Entrega em: '+esc(o.end):''}</div><button class="send" id="newo">Fazer novo pedido</button><p class="note">Projeto de demonstração: nenhum pedido ou pagamento real foi feito.</p>`;
+}
+function confirmOrder(pag){
+  order={...pend,pag,step:0,items:Object.keys(cart).map(i=>cart[i]+'x '+get(i)[2])};
+  cart={};all.forEach(p=>ctl(p[0]));
+  $('#f').reset();pm();
+  track();show('trackview');upd();
+  clearInterval(timer);
+  timer=setInterval(()=>{if(order.step<3){order.step++;track();upd();}else clearInterval(timer);},4000);
+}
+
 
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-inc],[data-dec],#open,#ov,#x');
+  const t=e.target.closest('[data-inc],[data-dec],#open,#ov,#x,#paid,#backck,#newo,[data-copy]');
   if(!t)return;
   const d=t.dataset;
   if(d.inc){cart[d.inc]=(cart[d.inc]||0)+1;ctl(d.inc);}
   else if(d.dec){if(--cart[d.dec]<=0)delete cart[d.dec];ctl(d.dec);if(!cnt())sheet(false);}
-  else if(t.id==='open')sheet(true);
+  else if(t.id==='open'){sheet(true);show(cnt()?'ckview':'trackview');}
+  else if(t.id==='paid')confirmOrder('Pix');
+  else if(t.id==='backck')show('ckview');
+  else if(t.id==='newo'){order=null;clearInterval(timer);sheet(false);}
+  else if('copy' in d){const ta=$('#pixview textarea');ta.select();try{navigator.clipboard.writeText(ta.value).then(()=>{t.textContent='Copiado'}).catch(()=>{})}catch(err){}}
   else sheet(false);
   upd();
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')sheet(false);});
-document.querySelectorAll('input[name=tipo],input[name=pg]').forEach(r=>r.addEventListener('change',upd));
+document.querySelectorAll('input[name=tipo]').forEach(r=>r.addEventListener('change',upd));
+document.querySelectorAll('input[name=pg]').forEach(r=>r.addEventListener('change',()=>{pm();upd();}));
 
 $('#f').addEventListener('submit',e=>{
   e.preventDefault();
-  const total=upd(),ent=val('tipo')==='Entrega',pg=val('pg'),ob=$('#ob').value.trim(),tc=$('#tc').value.trim();
-  const L=['*Novo pedido - Lanchonete Praça 12*','','Cliente: '+$('#nm').value.trim(),''];
-  Object.keys(cart).forEach(i=>{const p=get(i);L.push(`${cart[i]}x ${p[2]} - ${brl(p[4]*cart[i])}`);});
-  if(ob)L.push('','Observações: '+ob);
-  L.push('','Subtotal: '+brl(sub()));
-  if(ent)L.push('Entrega: '+brl(FEE));
-  L.push('*Total: '+brl(total)+'*','',ent?'Entrega em: '+$('#ad').value.trim():'Retirada no balcão','Pagamento: '+pg+(pg==='Dinheiro'&&tc?' (troco para '+tc+')':''));
-  window.open('https://wa.me/'+WHATSAPP+'?text='+encodeURIComponent(L.join('\n')),'_blank','noopener');
+  const total=upd(),p=val('pg'),ent=val('tipo')==='Entrega',tcEl=$('#tc'),tc=tcEl?tcEl.value.trim():'';
+  pend={n:Math.floor(1000+Math.random()*9000),total,ent,nome:$('#nm').value.trim().split(' ')[0],end:$('#ad').value.trim()};
+  if(p==='Pix')showPix();
+  else if(p==='Cartão'){
+    const l4=$('#cn').value.slice(-4),b=$('#pay');
+    b.disabled=true;b.textContent='Processando pagamento...';
+    setTimeout(()=>{b.disabled=false;confirmOrder('Cartão final '+l4);},1500);
+  }else confirmOrder('Pagamento na entrega'+(tc?' (troco para '+tc+')':''));
 });
-upd();
+document.addEventListener('input',e=>{
+  const i=e.target,d=i.value.replace(/\D/g,'');
+  if(i.id==='cn')i.value=d.slice(0,16).replace(/(\d{4})(?=\d)/g,'$1 ');
+  else if(i.id==='vl')i.value=d.slice(0,4).replace(/^(\d{2})(?=\d)/,'$1/');
+  else if(i.id==='cc')i.value=d.slice(0,4);
+});
+pm();upd();
 </script>
 </body>
 </html>
