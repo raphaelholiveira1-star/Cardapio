@@ -1,0 +1,59 @@
+:root{--bg:#FBF7EF;--surface:#fff;--ink:#1D1B16;--muted:#6B655A;--accent:#D8402A;--accent-ink:#fff;--mustard:#E8B030;--line:#E7DFCF;--tile:#F3EBD9}
+@media (prefers-color-scheme:dark){:root{--bg:#16130F;--surface:#201C16;--ink:#F4EEE2;--muted:#B0A793;--accent:#F06A4F;--accent-ink:#1A0B07;--line:#352E24;--tile:#2A241B}}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:96px}
+h1,h2{font-family:Rockwell,"Roboto Slab",Georgia,serif;margin:0;line-height:1.15}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+.wrap{max-width:640px;margin:0 auto;padding:0 18px}
+
+.top{padding:28px 0 20px;border-bottom:3px solid var(--ink)}
+.top h1{font-size:2.3rem}
+.top p{margin:6px 0 0;color:var(--muted)}
+.badge{display:inline-block;background:var(--mustard);color:#1D1B16;font-weight:700;font-size:.8rem;padding:3px 10px;border-radius:99px;margin-bottom:10px}
+
+nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:8px;overflow-x:auto;padding:10px 18px}
+nav a{white-space:nowrap;padding:6px 14px;border-radius:99px;border:1.5px solid var(--line);text-decoration:none;font-weight:600;font-size:.92rem;color:inherit}
+nav a:hover{border-color:var(--accent)}
+
+h2{font-size:1.5rem;margin:28px 0 6px}
+.item{display:grid;grid-template-columns:52px 1fr auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px dashed var(--line)}
+.emo{width:52px;height:52px;border-radius:12px;background:var(--tile);display:grid;place-items:center;font-size:1.7rem}
+.item b{display:block}
+.item small{color:var(--muted);display:block;line-height:1.35}
+.price{font-weight:700;display:block;margin-top:2px}
+.ctl{display:flex;align-items:center;gap:8px}
+.q{min-width:1.2em;text-align:center;font-weight:700}
+.add{background:var(--accent);color:var(--accent-ink);border:0;border-radius:99px;padding:8px 16px;font-weight:700}
+.st{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);font-weight:700;line-height:1}
+.note{color:var(--muted);font-size:.85rem}
+footer{padding:24px 18px}
+
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line);transform:translateY(110%);transition:transform .25s ease}
+.bar.on{transform:none}
+.bar button{width:100%;max-width:604px;margin:0 auto;display:flex;justify-content:space-between;background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;padding:14px 18px;font-weight:700}
+
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+.ov.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:92vh;overflow-y:auto;background:var(--surface);border-radius:20px 20px 0 0;transform:translateY(100%);visibility:hidden;transition:transform .3s ease,visibility 0s .3s;z-index:21;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+.sheet.on{transform:none;visibility:visible;transition:transform .3s ease}
+.in{max-width:604px;margin:0 auto}
+.hd{display:flex;justify-content:space-between;align-items:center}
+.hd h2{margin:0}
+.x{border:0;background:transparent;font-size:1.3rem;padding:6px}
+.ln{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+.f{margin:14px 0}
+.l{display:block;font-weight:600;font-size:.92rem;margin-bottom:4px}
+.f input[type=text],.f textarea{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+.seg label{position:relative}
+.seg input{position:absolute;opacity:0}
+.seg span{display:block;text-align:center;padding:10px 6px;border:1.5px solid var(--line);border-radius:10px;font-weight:600;font-size:.92rem}
+.seg input:checked+span{border-color:var(--accent);background:var(--tile)}
+.seg input:focus-visible+span{outline:3px solid var(--accent)}
+.row{display:flex;justify-content:space-between;padding:3px 0}
+.tot{font-weight:800;font-size:1.15rem;border-top:1px solid var(--line);margin-top:6px;padding-top:8px}
+.send{width:100%;margin-top:14px;background:#25D366;color:#06210F;border:0;border-radius:12px;padding:14px;font-weight:800}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lanchonete Praça 12 | Cardápio digital</title>
+<meta name="description" content="Cardápio digital com pedido direto pelo WhatsApp. Projeto de demonstração.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<span class="badge">Aberto hoje até 23h</span>
+<h1>Lanchonete Praça 12</h1>
+<p>Monte seu pedido e envie direto pelo WhatsApp. Sem cadastro e sem baixar app.</p>
+</div></header>
+<nav aria-label="Categorias"><div class="wrap" id="cats"></div></nav>
+<main class="wrap" id="menu"></main>
+<footer><p class="note">Projeto de demonstração: cardápio fictício criado para mostrar como funciona um pedido por WhatsApp.</p></footer>
+
+<div class="bar" id="bar"><button id="open"><span id="bc"></span><span id="bt"></span></button></div>
+<div class="ov" id="ov"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Seu pedido"><div class="in">
+<div class="hd"><h2>Seu pedido</h2><button class="x" id="x" aria-label="Fechar">✕</button></div>
+<div id="lines"></div>
+<form id="f">
+<div class="f"><label class="l" for="nm">Seu nome</label><input type="text" id="nm" required autocomplete="name"></div>
+<div class="f"><span class="l">Como quer receber?</span><div class="seg">
+<label><input type="radio" name="tipo" value="Retirada" checked><span>Retirar no balcão</span></label>
+<label><input type="radio" name="tipo" value="Entrega"><span>Entrega (+ R$ 6,00)</span></label></div></div>
+<div class="f" id="end" hidden><label class="l" for="ad">Endereço de entrega</label><input type="text" id="ad" placeholder="Rua, número, bairro" autocomplete="street-address"></div>
+<div class="f"><span class="l">Pagamento</span><div class="seg">
+<label><input type="radio" name="pg" value="Pix" checked><span>Pix</span></label>
+<label><input type="radio" name="pg" value="Cartão"><span>Cartão</span></label>
+<label><input type="radio" name="pg" value="Dinheiro"><span>Dinheiro</span></label></div></div>
+<div class="f" id="troco" hidden><label class="l" for="tc">Troco para quanto? (opcional)</label><input type="text" id="tc" placeholder="R$ 50"></div>
+<div class="f"><label class="l" for="ob">Observações (opcional)</label><textarea id="ob" rows="2" placeholder="Ex.: sem cebola"></textarea></div>
+<div id="sum"></div>
+<button class="send" type="submit">Enviar pedido pelo WhatsApp</button>
+<p class="note">O pedido chega pelo WhatsApp da lanchonete, e o pagamento é combinado na entrega ou na retirada.</p>
+</form>
+</div></section>
+
+<script>
+// Número do WhatsApp que recebe os pedidos (55 + DDD + número). Troque pelo do estabelecimento.
+const WHATSAPP='5511987184298';
+const FEE=6;
+const M=[
+['Lanches',[
+ [1,'🍔','X-Burger','Pão brioche, hambúrguer 150 g, queijo e molho da casa',28],
+ [2,'🥓','X-Bacon','Hambúrguer 150 g, bacon crocante, queijo e cebola caramelizada',32],
+ [3,'🍗','Frango Crocante','Filé de frango empanado, alface, tomate e maionese',30],
+ [4,'🌱','Veggie','Hambúrguer de grão-de-bico, rúcula e molho de ervas',29]]],
+['Porções',[
+ [5,'🍟','Batata frita','Porção média, com sal e páprica',18],
+ [6,'🧅','Anéis de cebola','10 unidades com molho barbecue',22]]],
+['Bebidas',[
+ [7,'🥤','Refrigerante lata','350 ml, vários sabores',6],
+ [8,'🍊','Suco natural','Laranja ou limão, 400 ml',10],
+ [9,'💧','Água mineral','500 ml, com ou sem gás',4]]],
+['Sobremesas',[
+ [10,'🍫','Brownie','Com sorvete de creme',14],
+ [11,'🍮','Pudim','Fatia individual com calda de caramelo',12]]]
+];
+const $=s=>document.querySelector(s),brl=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const all=M.flatMap(c=>c[1]),get=id=>all.find(i=>i[0]==id);
+let cart={};
+
+$('#cats').innerHTML=M.map((c,i)=>`<a href="#c${i}">${c[0]}</a>`).join('');
+$('#menu').innerHTML=M.map((c,i)=>`<h2 id="c${i}">${c[0]}</h2>`+c[1].map(p=>
+  `<div class="item"><div class="emo" aria-hidden="true">${p[1]}</div><div><b>${p[2]}</b><small>${p[3]}</small><span class="price">${brl(p[4])}</span></div><div class="ctl" data-ctl="${p[0]}"></div></div>`
+).join('')).join('');
+
+function ctl(id){
+  const q=cart[id]||0;
+  document.querySelector(`[data-ctl="${id}"]`).innerHTML=q
+    ?`<button class="st" data-dec="${id}" aria-label="Tirar um">−</button><span class="q">${q}</span><button class="st" data-inc="${id}" aria-label="Colocar mais um">+</button>`
+    :`<button class="add" data-inc="${id}">Adicionar</button>`;
+}
+all.forEach(p=>ctl(p[0]));
+
+const sub=()=>Object.keys(cart).reduce((s,i)=>s+get(i)[4]*cart[i],0);
+const cnt=()=>Object.values(cart).reduce((a,b)=>a+b,0);
+const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
+
+function upd(){
+  const n=cnt(),s=sub(),ent=val('tipo')==='Entrega',fee=ent?FEE:0;
+  $('#bar').classList.toggle('on',n>0);
+  $('#bc').textContent='Ver pedido · '+n+(n===1?' item':' itens');
+  $('#bt').textContent=brl(s);
+  $('#end').hidden=!ent;$('#ad').required=ent;
+  $('#troco').hidden=val('pg')!=='Dinheiro';
+  $('#lines').innerHTML=Object.keys(cart).map(i=>{const p=get(i);
+    return `<div class="ln"><span>${p[2]}</span><span class="ctl"><button class="st" data-dec="${i}" aria-label="Tirar um">−</button><span class="q">${cart[i]}</span><button class="st" data-inc="${i}" aria-label="Colocar mais um">+</button></span><span>${brl(p[4]*cart[i])}</span></div>`}).join('');
+  $('#sum').innerHTML=`<div class="row"><span>Subtotal</span><span>${brl(s)}</span></div>${ent?`<div class="row"><span>Taxa de entrega</span><span>${brl(fee)}</span></div>`:''}<div class="row tot"><span>Total</span><span>${brl(s+fee)}</span></div>`;
+  return s+fee;
+}
+function sheet(on){$('#sheet').classList.toggle('on',on);$('#ov').classList.toggle('on',on);}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-inc],[data-dec],#open,#ov,#x');
+  if(!t)return;
+  const d=t.dataset;
+  if(d.inc){cart[d.inc]=(cart[d.inc]||0)+1;ctl(d.inc);}
+  else if(d.dec){if(--cart[d.dec]<=0)delete cart[d.dec];ctl(d.dec);if(!cnt())sheet(false);}
+  else if(t.id==='open')sheet(true);
+  else sheet(false);
+  upd();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')sheet(false);});
+document.querySelectorAll('input[name=tipo],input[name=pg]').forEach(r=>r.addEventListener('change',upd));
+
+$('#f').addEventListener('submit',e=>{
+  e.preventDefault();
+  const total=upd(),ent=val('tipo')==='Entrega',pg=val('pg'),ob=$('#ob').value.trim(),tc=$('#tc').value.trim();
+  const L=['*Novo pedido - Lanchonete Praça 12*','','Cliente: '+$('#nm').value.trim(),''];
+  Object.keys(cart).forEach(i=>{const p=get(i);L.push(`${cart[i]}x ${p[2]} - ${brl(p[4]*cart[i])}`);});
+  if(ob)L.push('','Observações: '+ob);
+  L.push('','Subtotal: '+brl(sub()));
+  if(ent)L.push('Entrega: '+brl(FEE));
+  L.push('*Total: '+brl(total)+'*','',ent?'Entrega em: '+$('#ad').value.trim():'Retirada no balcão','Pagamento: '+pg+(pg==='Dinheiro'&&tc?' (troco para '+tc+')':''));
+  window.open('https://wa.me/'+WHATSAPP+'?text='+encodeURIComponent(L.join('\n')),'_blank','noopener');
+});
+upd();
+</script>
+</body>
+</html>
